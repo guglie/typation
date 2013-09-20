@@ -9,13 +9,13 @@
 
 	var methods = {
     	init : function( options ) { 
-			at = this;
+			typ = this;
 	
-	      	at.settings = $.extend( {
+	      	typ.settings = $.extend( {
 				to_type : '',
 				begin_delay : 1000,
-				min_type_delay : 8,
-				max_type_delay : 90,
+				min_type_delay : 50,
+				max_type_delay : 100,
 				min_found_delay : 300,
 				max_found_delay : 800,
 				min_pause_delay : 200,
@@ -30,7 +30,7 @@
 			}, options);
 			
 			// define simple error map
-			at.error_map = {
+			typ.error_map = {
 				'1' : '2q',
 				'2' : '1qw3',
 				'3' : '2we4',
@@ -70,50 +70,50 @@
 			};
 			
 			// define "enums"
-			at.States = {
+			typ.States = {
 				TYPING : 1, 
 				CORRECTING : 2,
 				STOP : 3
 			};
-			at.Ops = {
+			typ.Ops = {
 				TYPE : 1,
 				PAUSE : 2,
 				ERROR : 3,
 				ERRFOUND : 4
 			};
-			at.Errors = {
+			typ.Errors = {
 				INSERT : 1,
 				DELETE : 2
 			}
 			
 			if (Object.freeze) {
-				Object.freeze(at.States);
-				Object.freeze(at.Ops);
+				Object.freeze(typ.States);
+				Object.freeze(typ.Ops);
 			}
 			
 			// variables
-			at.curr_state = at.States.TYPING;
-			at.typed_count = 0;
-			at.ffwd = false;
-			at.str_typed = '';
-			at.str_to_type = at.settings.to_type;
-			at.errors = [];
+			typ.curr_state = typ.States.TYPING;
+			typ.typed_count = 0;
+			typ.ffwd = false;
+			typ.str_typed = '';
+			typ.str_to_type = typ.settings.to_type;
+			typ.errors = [];
 			
 			// create cursor and begin...
 			methods.createCursor();
-			at.beginTimeout = setTimeout(methods.update,at.settings.begin_delay);
+			typ.beginTimeout = setTimeout(methods.update,typ.settings.begin_delay);
 			
 			return at;
 	    },
 	
 		append : function(to_type) {
-			at.str_to_type += to_type;
+			typ.str_to_type += to_type;
 			
-			if(at.curr_state == at.States.STOP) {
-				at.curr_state = at.States.TYPING;
-				at.beginTimeout = setTimeout(methods.update,at.settings.begin_delay);
+			if(typ.curr_state == typ.States.STOP) {
+				typ.curr_state = typ.States.TYPING;
+				typ.beginTimeout = setTimeout(methods.update,typ.settings.begin_delay);
 				
-				if(!at.cursorBlinking) {
+				if(!typ.cursorBlinking) {
 					methods.cursorBlink();
 				}
 			}
@@ -121,19 +121,19 @@
 			
 		},
 		update : function() {
-			if(at.curr_state == at.States.CORRECTING) {
+			if(typ.curr_state == typ.States.CORRECTING) {
 				methods.correct();
-			} else if(at.errors.length != 0 && Math.random() < at.settings.find_error_prob) {
+			} else if(typ.errors.length != 0 && Math.random() < typ.settings.find_error_prob) {
 				//errors found, correct them
-				at.curr_state = at.States.CORRECTING;
+				typ.curr_state = typ.States.CORRECTING;
 				methods.updateDelay('found');
 				return;
-			} else if(at.str_to_type.length != 0) {
+			} else if(typ.str_to_type.length != 0) {
 				//queue not empty
 				
-				if(Math.random() < at.settings.error_prob) {
+				if(Math.random() < typ.settings.error_prob) {
 					methods.makeError();
-				} else if(Math.random() < at.settings.pause_prob) {
+				} else if(Math.random() < typ.settings.pause_prob) {
 					methods.updateDelay('pause');
 					return;
 				} else {
@@ -142,51 +142,51 @@
 				}
 			} else {
 				//the queue is empty
-				at.curr_state = at.States.STOP;
+				typ.curr_state = typ.States.STOP;
 				
 				//call end callback
-				if($.isFunction(at.settings.endCallback)) {
-					at.settings.endCallback.call();
+				if($.isFunction(typ.settings.endCallback)) {
+					typ.settings.endCallback.call();
 				}
 			}
 			
 		},
 		correct : function() {
 			//there is an error here?
-			for(var i=at.errors.length-1; i>=0; i--) {
-				if(at.errors[i].pos == at.typed_count) {
+			for(var i=typ.errors.length-1; i>=0; i--) {
+				if(typ.errors[i].pos == typ.typed_count) {
 					//error here, correct it
 					
-					if(at.errors[i].err == at.Errors.INSERT) {
-						at.str_to_type = at.str_to_type.substr(1);
+					if(typ.errors[i].err == typ.Errors.INSERT) {
+						typ.str_to_type = typ.str_to_type.substr(1);
 					} else { // correcting DELETE
-						at.str_to_type = at.errors[i].character + at.str_to_type;
+						typ.str_to_type = typ.errors[i].character + typ.str_to_type;
 					}
 					
-					at.errors.splice(i,1);
+					typ.errors.splice(i,1);
 				}
 			}
 			
 			//all the errors corrected?
-			if(at.errors.length == 0) {
-				at.curr_state = at.States.TYPING;
+			if(typ.errors.length == 0) {
+				typ.curr_state = typ.States.TYPING;
 				
 			} else {
 				//else backspace...
 				
-				at.$cursor.remove();
+				typ.$cursor.remove();
 				
 				//remove last char
-				var last_char = at.str_typed.charAt(at.str_typed.length-1);
-				at.str_typed = at.str_typed.substr(0,at.str_typed.length-1);
+				var last_char = typ.str_typed.charAt(typ.str_typed.length-1);
+				typ.str_typed = typ.str_typed.substr(0,typ.str_typed.length-1);
 				
 				//append it to queue
-				at.str_to_type = last_char + at.str_to_type;
+				typ.str_to_type = last_char + typ.str_to_type;
 
-				at.typed_count--;
+				typ.typed_count--;
 
-				at.text(at.str_typed);
-				at.append(at.$cursor);
+				typ.text(typ.str_typed);
+				typ.append(typ.$cursor);
 			}
 			
 			methods.updateDelay('typed');
@@ -196,70 +196,70 @@
 			if(Math.random() < 0.5) {
 				
 				//insertion
-				//var randomChar = at.settings.error_characters.charAt(Math.floor(Math.random()*at.settings.error_characters.length));
+				//var randomChar = typ.settings.error_characters.charAt(Math.floor(Math.random()*typ.settings.error_characters.length));
 				
 				//random "key" near last "key pressed"
-				var last_char = at.str_typed.charAt(at.str_typed.length-1);
+				var last_char = typ.str_typed.charAt(typ.str_typed.length-1);
 				last_char = last_char.toLowerCase();
 				
 				//insert only if key is on map
-				if(!!at.error_map[last_char]) {
-					var near_keys = at.error_map[last_char];
+				if(!!typ.error_map[last_char]) {
+					var near_keys = typ.error_map[last_char];
 					var randomChar = near_keys.charAt(Math.floor(Math.random()*near_keys.length));
 					
-					at.errors.push({
-						err : at.Errors.INSERT,
-						pos : at.typed_count
+					typ.errors.push({
+						err : typ.Errors.INSERT,
+						pos : typ.typed_count
 					});
 					
-					at.str_to_type = randomChar+at.str_to_type;
+					typ.str_to_type = randomChar+typ.str_to_type;
 				}
 				
 			} else {
-				var deletedChar = at.str_to_type.charAt(0);
+				var deletedChar = typ.str_to_type.charAt(0);
 				
-				at.errors.push({
-					err : at.Errors.DELETE,
-					pos : at.typed_count, 
+				typ.errors.push({
+					err : typ.Errors.DELETE,
+					pos : typ.typed_count, 
 					character : deletedChar
 				});
 				
 				//deletion
-				at.str_to_type = at.str_to_type.substr(1);
+				typ.str_to_type = typ.str_to_type.substr(1);
 			}
 			
 			methods.typeChar();
 			methods.updateDelay('error');
 		},
 		skip : function() {
-			if(at.curr_state == at.States.STOP) {
+			if(typ.curr_state == typ.States.STOP) {
 				return;
 			}
 			
 			methods.clearTimers();
-			at.$cursor.remove();
-			at.append(at.str_to_type);
-			at.str_typed += at.str_to_type;
-			at.str_to_type = '';
-			at.append(at.$cursor);
+			typ.$cursor.remove();
+			typ.append(typ.str_to_type);
+			typ.str_typed += typ.str_to_type;
+			typ.str_to_type = '';
+			typ.append(typ.$cursor);
 			
-			at.curr_state = at.States.STOP;
+			typ.curr_state = typ.States.STOP;
 			
-			if($.isFunction(at.settings.endCallback)) {
-				at.settings.endCallback.call();
+			if($.isFunction(typ.settings.endCallback)) {
+				typ.settings.endCallback.call();
 			}
 			
 			return at;
 		},
 		ffwd : function() {
-			if(at.curr_state == at.States.STOP) {
+			if(typ.curr_state == typ.States.STOP) {
 				return;
 			}
 			
-			at.ffwd = true;
+			typ.ffwd = true;
 			methods.clearTimers();
 			
-			at.settings = $.extend(at.settings,{
+			typ.settings = $.extend(typ.settings,{
 				begin_delay : 0,
 				min_type_delay : 0,
 				max_type_delay : 0
@@ -268,27 +268,27 @@
 			methods.update();
 		},
 		consumeChar : function(a_str) {
-			var first_char = at.str_to_type.charAt(0);
-			at.str_to_type = at.str_to_type.substr(1);
+			var first_char = typ.str_to_type.charAt(0);
+			typ.str_to_type = typ.str_to_type.substr(1);
 			return first_char;
 		},
 		
 		typeChar : function() {
 			var char_to_type = methods.consumeChar();
 			
-			at.str_typed += char_to_type;
+			typ.str_typed += char_to_type;
 			
-			at.typed_count++;
+			typ.typed_count++;
 			
-			at.$cursor.remove();
-			at.append(char_to_type);
-			at.append(at.$cursor);
+			typ.$cursor.remove();
+			typ.append(char_to_type);
+			typ.append(typ.$cursor);
 		},
 		
 		clearTimers : function() {
-			clearTimeout(at.finalTimeout);
-			clearTimeout(at.beginTimeout);
-			clearTimeout(at.charTimeout);
+			clearTimeout(typ.finalTimeout);
+			clearTimeout(typ.beginTimeout);
+			clearTimeout(typ.charTimeout);
 		},
 		
 		/**
@@ -305,70 +305,70 @@
 			switch(op) {
 				case 'typed':
 				case 'error':
-					min_delay = at.settings.min_type_delay;
-					max_delay = at.settings.max_type_delay;
+					min_delay = typ.settings.min_type_delay;
+					max_delay = typ.settings.max_type_delay;
 					break;
 				case 'found':
-					min_delay = at.settings.min_found_delay;
-					max_delay = at.settings.max_found_delay;
+					min_delay = typ.settings.min_found_delay;
+					max_delay = typ.settings.max_found_delay;
 					break;
 				case 'pause':
-					min_delay = at.settings.min_pause_delay;
-					max_delay = at.settings.max_pause_delay;				
+					min_delay = typ.settings.min_pause_delay;
+					max_delay = typ.settings.max_pause_delay;				
 					break;
 			}
 			
 			
 			//random delay
-			if(!at.ffwd) {
+			if(!typ.ffwd) {
 				interval = methods.randomBetween(min_delay,max_delay);
 			} else {
 				interval = 0;
 			}
 			
-			at.charTimeout = setTimeout(methods.update,interval);
+			typ.charTimeout = setTimeout(methods.update,interval);
 			
 			//call update callback
-			if($.isFunction(at.settings.updateCallback)) {
-				at.settings.updateCallback.call();
+			if($.isFunction(typ.settings.updateCallback)) {
+				typ.settings.updateCallback.call();
 			}
 		},
 		
 		createCursor : function() {
-			at.append('<span id="at-cursor">|</span>');
-			at.$cursor = $('#at-cursor');
-			at.$cursor.isVisible = true;
-			at.$cursor.css({
+			typ.append('<span id="at-cursor">|</span>');
+			typ.$cursor = $('#at-cursor');
+			typ.$cursor.isVisible = true;
+			typ.$cursor.css({
 				'font-family':'arial,sans-serif',
-				'color':at.settings.cursor_color,
+				'color':typ.settings.cursor_color,
 				'line-height':'0.9em'
 			});
 			
 			methods.cursorBlink();
 		},
 		cursorBlink : function() {
-			at.cursorBlinking = true;
+			typ.cursorBlinking = true;
 			
-			at.cursor_interval = setInterval(function(){
-				if(at.$cursor.isVisible) {
-					at.$cursor.css('visibility','hidden');
+			typ.cursor_interval = setInterval(function(){
+				if(typ.$cursor.isVisible) {
+					typ.$cursor.css('visibility','hidden');
 				} else {
-					at.$cursor.css('visibility','visible');
-					//at.$cursor.text('|');
+					typ.$cursor.css('visibility','visible');
+					//typ.$cursor.text('|');
 				}
-				at.$cursor.isVisible = !at.$cursor.isVisible;
+				typ.$cursor.isVisible = !typ.$cursor.isVisible;
 				
-				//at.$cursor.toggle();
+				//typ.$cursor.toggle();
 				
-			},at.settings.cursor_blink);
+			},typ.settings.cursor_blink);
 		},
 		
 		clearCursor : function() {
-			at.cursorBlinking = false;
+			typ.cursorBlinking = false;
 			
 			//remove the blinking cursor
-			clearInterval(at.cursor_interval);
-			at.$cursor.remove();
+			clearInterval(typ.cursor_interval);
+			typ.$cursor.remove();
 		},
 		
 		randomBetween : function(x, y) {
@@ -376,13 +376,13 @@
 		}
 	};
 	
-	$.fn.animaType = function( method ) {
+	$.fn.typation = function( method ) {
 	    if ( methods[method] ) {
 	      return methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
 	    } else if ( typeof method === 'object' || ! method ) {
 	      return methods.init.apply( this, arguments );
 	    } else {
-	      $.error( 'Method ' +  method + ' does not exist on jQuery.animaType' );
+	      $.error( 'Method ' +  method + ' does not exist on jQuery.typation' );
 	    }
 	};
 
